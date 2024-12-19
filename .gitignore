@@ -1,0 +1,7 @@
+# Directories to ignore
+/data/
+/docs/
+/analysis/
+
+# Files to ignore
+.DS_Store
