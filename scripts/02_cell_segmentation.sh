@@ -8,15 +8,17 @@ alias steinbock="docker run -v /Users/sarapatti/Desktop/PhD_projects/Llyod_lab/C
 # $ Option 1: DeepCell
 # # * DeepCell
 # # 2. Deep cell - cell segmentation
-steinbock segment deepcell --app mesmer --minmax
+steinbock segment deepcell --app mesmer --minmax #! CONFIGURE THIS COMMAND minmax
 
 
 # $ Option 2: Ilastik and CellProfiler
 # * Pixel classification using ilastik
 # 3. Prepare the data for ilastik
-steinbock classify ilastik prepare --cropsize 50 --seed 123
+steinbock classify ilastik prepare --cropsize 50 --seed 123 #! CONFIGURE THIS COMMAND cropsize and seed
 # 4. Train classifier - To interactively train a new classifier, open the pixel classification project in Ilastik
 steinbock apps ilastik
+# ! Include instructions on how to train the classifier in Ilastik
+
 
 # TODO: determmine how to use CellProfiler
 # * CellProfiler

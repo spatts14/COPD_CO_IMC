@@ -4,6 +4,7 @@ alias steinbock="docker run -v /Users/sarapatti/Desktop/PhD_projects/Llyod_lab/C
 
 
 # ! Export data
+# ! ADD TO CONFIG ON WHICH TO EXPORT - default is none
 
 # $ 1. To export images to OME-TIFF, with channel names determined by the panel file
 steinbock export ome

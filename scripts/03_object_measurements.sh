@@ -13,11 +13,11 @@ steinbock measure regionprops
 
 # $ Object neighborhood measurements
 # Centroid distance
-steinbock measure neighbors --type centroids --dmax 15
+steinbock measure neighbors --type centroids --dmax 15 #! CONFIGURE THIS COMMAND neighbors and centroid
 # Euclidean distance distance is used
 
 # Construct k-nearest neighbor (kNN) graphs based on object centroid distances
-steinbock measure neighbors --type centroids --kmax 5
+steinbock measure neighbors --type centroids --kmax 5 #! CONFIGURE THIS COMMAND neighbors and centroid
 
 ## There are many other options for neighborhood measurements, see the documentation for more details
 # https://bodenmillergroup.github.io/steinbock/latest/cli/measurement/

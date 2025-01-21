@@ -15,7 +15,8 @@
 # Run the following commands in the terminal
 # $ Set up Steinbock alias
 # 3. Set up Stienbock command alias
-alias steinbock="docker run -v /Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/data:/data --platform linux/amd64 -u $(id -u):$(id -g) -p 8888:8888 -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/.Xauthority:/home/steinbock/.Xauthority:ro -e DISPLAY=host.docker.internal:0 ghcr.io/bodenmillergroup/steinbock:0.16.1"
+alias steinbock="docker run -v /Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/data:/data --platform linux/amd64 -u $(id -u):$(id -g) -p 8888:8888 -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/.Xauthority:/home/steinbock/.Xauthority:ro -e DISPLAY=host.docker.internal:0 ghcr.io/bodenmillergroup/steinbock:0.16.1" 
+#! CONFIGURE THIS COMMAND
 # set the correct path to the data
 # 4. Confirm version of Steinbock and alias is set correctly
 steinbock --version 
@@ -23,7 +24,7 @@ steinbock --version
 
 # $ Convert files and filter hot pixels
 # 5. Convert the .mcd/.txt files to .tiff files and filter hot pixels
-steinbock preprocess imc images --hpf 50 
+steinbock preprocess imc images --hpf 50 #! CONFIGURE THIS COMMAND
 # --hpf FLOAT:  Hot pixel filter (specify delta threshold)
 # makes a new directory called 'img' with .tiff images
 
