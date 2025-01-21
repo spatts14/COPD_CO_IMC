@@ -1,0 +1,25 @@
+# Content
+
+# 01_preprocessing.sh
+alias_steinbock: "docker run -v /Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/data:/data --platform linux/amd64 -u $(id -u):$(id -g) -p 8888:8888 -v /tmp/.X11-unix:/tmp/.X11-unix -v ~/.Xauthority:/home/steinbock/.Xauthority:ro -e DISPLAY=host.docker.internal:0 ghcr.io/bodenmillergroup/steinbock:0.16.1" # set the correct path to the data
+hpf: 50 # FLOAT:  Hot pixel filter (specify delta threshold)
+
+# 02_cell_segmentation.sh
+app: mesmer # default DeepCell application name
+cropsize: 50
+set_seed: 123
+
+# 03_object_measurements.sh
+type: centroids
+dmax: 15
+kmax: 5
+
+# 04_data_export.sh
+export:
+  ome: false
+  histocat: false
+  csv: false
+  fcs: false
+  anndata: false
+  graphs: false
+  format: gexf # or gml
