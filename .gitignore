@@ -5,3 +5,4 @@
 
 # Files to ignore
 .DS_Store
+.Rhistory
