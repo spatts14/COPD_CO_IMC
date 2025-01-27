@@ -33,9 +33,9 @@ getwd()
 # Load data
 ```{r}
 # Reload the relevant objects
-images <- readRDS("../../analysis/files/images1.rds")
-masks <- readRDS("../../analysis/files/masks1.rds")
-spe <- readRDS("../../analysis/files/spe1.rds")
+images <- readRDS("../../analysis/files/imagesM1.rds")
+masks <- readRDS("../../analysis/files/masksM1.rds")
+spe <- readRDS("../../analysis/files/speM1.rds")
 ```
 
 
