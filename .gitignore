@@ -2,6 +2,7 @@
 /data/
 /docs/
 /analysis/
+/scripts/logs
 
 # Files to ignore
 .DS_Store
