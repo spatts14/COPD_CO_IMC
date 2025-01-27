@@ -1,0 +1,182 @@
+---
+title: "02_Normalize_data"
+author: "Sara Patti"
+format: 
+    html:
+        mainfont: "Arial"
+        toc: true
+        toc-title: "Index"
+editor: source
+---
+
+```{r}
+# Load packages
+library(imcRtools) 
+library(cytomapper) 
+library(openxlsx) 
+library(stringr) 
+library(dittoSeq)
+library(RColorBrewer)
+library(Polychrome)
+library(pals)
+library(ggridges)
+library(gridExtra)
+library(readxl)
+```
+
+```{r}
+setwd("/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/") #CONFIG
+getwd()
+```
+
+
+# Load data
+```{r}
+# Reload the relevant objects
+images <- readRDS("../../analysis/files/images1.rds")
+masks <- readRDS("../../analysis/files/masks1.rds")
+spe <- readRDS("../../analysis/files/spe1.rds")
+```
+
+
+# Count transformation
+
+-   To avoid analysis biases from these high-expressing cells, the expression counts are commonly transformed or clipped
+-   Transformation using inverse hyperbolic sine transformation on data
+-   While the cofactor for CyTOF data is often set to 5, IMC data usually display much lower counts. We therefore apply a cofactor of 1
+
+```{r}
+# apply transformation
+assay(spe, "exprs") = asinh(counts(spe)/1)
+```
+
+Create directories to show before and after transformation
+
+```{r}
+# Define the base directory
+base_dir = "../../analysis/figures/"
+
+# Create directories with a helper function
+create_dir <- function(path) {
+  if (!dir.exists(path)) {
+    dir.create(path, showWarnings = FALSE, recursive = TRUE)
+  }
+}
+
+# Create the main directory and subdirectories
+create_dir(base_dir)
+create_dir(file.path(base_dir, "001_ReadInTheData"))
+create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_before"))
+create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_after"))
+create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_both"))
+```
+
+# Format data
+
+```{r}
+unique_sample_id = unique(spe$slide_ID) 
+unique_markers = unique(rownames(spe))
+```
+
+# Determine what to group by
+```{r}
+group_by = "treatment"
+```
+
+
+View data before transformation only
+
+```{r}
+# Outer loop: Iterate over unique markers
+for (j in seq_along(unique_markers)) {
+  marker_to_plot <- unique_markers[j]
+  print(marker_to_plot)
+  # Define directory for the current marker
+  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_before/")
+  
+  # Create the plot
+  plot <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "counts") +
+        ggtitle(paste(marker_to_plot, "- before transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
+        ylab(group_by) +
+        theme(
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()
+        )
+      
+    # Save the plot
+    filename <- paste0(directory_path, marker_to_plot,"_", group_by, "_before_transformation.png")
+    png(filename, res = 600, units = "in", width = 15, height = 15)
+    print(plot) # Use print() instead of plot()
+    dev.off()
+}
+```
+
+View data after transformation only
+
+```{r}
+for (j in seq_along(unique_markers)) {
+  marker_to_plot <- unique_markers[j]
+  print(marker_to_plot)
+  # Define directory for the current marker
+  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_after/")
+  
+  # Create the plot
+  plot <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "exprs") +
+        ggtitle(paste(marker_to_plot, "- after transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
+        ylab(group_by) +
+        theme(
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()
+        )
+      
+    # Save the plot
+    filename <- paste0(directory_path, marker_to_plot,"_", group_by, "_after_transformation.png")
+    png(filename, res = 600, units = "in", width = 15, height = 15)
+    print(plot) # Use print() instead of plot()
+    dev.off()
+}
+```
+
+
+View both before and after transformation
+
+```{r}
+# Outer loop: Iterate over unique markers
+for (j in seq_along(unique_markers)) {
+  marker_to_plot <- unique_markers[j]
+  print(marker_to_plot)
+  # Define directory for the current marker
+  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_both/")
+  
+  # Create the plot
+  plot_before <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "counts") +
+        ggtitle(paste(marker_to_plot, "- before transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
+        ylab(group_by) +
+        theme(
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()
+        )
+
+  plot_after <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "exprs") +
+        ggtitle(paste(marker_to_plot, "- after transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
+        ylab(group_by) +
+        theme(
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()
+        )
+  # Plot side by side  
+  both <- grid.arrange(plot_before, plot_after, ncol=2)
+    
+  # Save the plot
+  filename <- paste0(directory_path, marker_to_plot, "_before_and_after_transformation.png")
+  ggsave(filename, plot = both, width = 10, height = 5)
+}
+```
