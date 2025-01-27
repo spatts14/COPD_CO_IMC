@@ -6,7 +6,7 @@ format:
         mainfont: "Arial"
         toc: true
         toc-title: "Index"
-editor: visual
+editor: source
 ---
 
 # Background information
@@ -23,7 +23,9 @@ library(cytomapper)
 library(openxlsx) 
 library(stringr) 
 library(dittoSeq)
-library(RColorBrewer) 
+library(RColorBrewer)
+library(Polychrome)
+library(pals)
 library(ggridges)
 library(gridExtra)
 library(readxl)
@@ -77,147 +79,86 @@ for (col in meta_cat) {
 }
 ```
 
-############### SPLIT INTO NEW DOCUMENT HERE
 
-# Count transformation
-
--   To avoid analysis biases from these high-expressing cells, the expression counts are commonly transformed or clipped
--   Transformation using inverse hyperbolic sine transformation on data
--   While the cofactor for CyTOF data is often set to 5, IMC data usually display much lower counts. We therefore apply a cofactor of 1
-
+# Define color schemes
+## TO DO: How should we change this so it only if for discrete variables? We want to use a cmap for continous variables and a palette for discrete 
 ```{r}
-# apply transformation
-assay(spe, "exprs") = asinh(counts(spe)/1)
-```
+# Initialize an empty list to store color vectors
+color_vectors <- list()  
 
-Create directories to show before and after transformation
-
-```{r}
-# Define the base directory
-base_dir = "../../analysis/figures/"
-
-# Create directories with a helper function
-create_dir <- function(path) {
-  if (!dir.exists(path)) {
-    dir.create(path, showWarnings = FALSE, recursive = TRUE)
-  }
-}
-
-# Create the main directory and subdirectories
-create_dir(base_dir)
-create_dir(file.path(base_dir, "001_ReadInTheData"))
-create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_before"))
-create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_after"))
-create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_both"))
-```
-
-# Format data
-
-```{r}
-unique_sample_id = unique(spe$slide_ID) 
-unique_markers = unique(rownames(spe))
-```
-
-# Determine what to group by
-```{r}
-group_by = "treatment"
-```
-
-
-View data before transformation only
-
-```{r}
-# Outer loop: Iterate over unique markers
-for (j in seq_along(unique_markers)) {
-  marker_to_plot <- unique_markers[j]
-  print(marker_to_plot)
-  # Define directory for the current marker
-  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_before/")
-  
-  # Create the plot
-  plot <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "counts") +
-        ggtitle(paste(marker_to_plot, "- before transformation grouped by", group_by)) +
-        scale_fill_viridis_d(option = "turbo", name = group_by) +
-        ylab(group_by) +
-        theme(
-          axis.text.x = element_text(size = 10),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()
-        )
-      
-    # Save the plot
-    filename <- paste0(directory_path, marker_to_plot,"_", group_by, "_before_transformation.png")
-    png(filename, res = 600, units = "in", width = 15, height = 15)
-    print(plot) # Use print() instead of plot()
-    dev.off()
-}
-```
-
-View data after transformation only
-
-```{r}
-for (j in seq_along(unique_markers)) {
-  marker_to_plot <- unique_markers[j]
-  print(marker_to_plot)
-  # Define directory for the current marker
-  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_after/")
-  
-  # Create the plot
-  plot <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "exprs") +
-        ggtitle(paste(marker_to_plot, "- after transformation grouped by", group_by)) +
-        scale_fill_viridis_d(option = "turbo", name = group_by) +
-        ylab(group_by) +
-        theme(
-          axis.text.x = element_text(size = 10),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()
-        )
-      
-    # Save the plot
-    filename <- paste0(directory_path, marker_to_plot,"_", group_by, "_after_transformation.png")
-    png(filename, res = 600, units = "in", width = 15, height = 15)
-    print(plot) # Use print() instead of plot()
-    dev.off()
-}
-```
-
-
-View both before and after transformation
-
-```{r}
-# Outer loop: Iterate over unique markers
-for (j in seq_along(unique_markers)) {
-  marker_to_plot <- unique_markers[j]
-  print(marker_to_plot)
-  # Define directory for the current marker
-  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_both/")
-  
-  # Create the plot
-  plot_before <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "counts") +
-        ggtitle(paste(marker_to_plot, "- before transformation grouped by", group_by)) +
-        scale_fill_viridis_d(option = "turbo", name = group_by) +
-        ylab(group_by) +
-        theme(
-          axis.text.x = element_text(size = 10),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()
-        )
-
-  plot_after <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "exprs") +
-        ggtitle(paste(marker_to_plot, "- after transformation grouped by", group_by)) +
-        scale_fill_viridis_d(option = "turbo", name = group_by) +
-        ylab(group_by) +
-        theme(
-          axis.text.x = element_text(size = 10),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank()
-        )
-  # Plot side by side  
-  both <- grid.arrange(plot_before, plot_after, ncol=2)
+# Assign a color palette to every column in metadata
+for (col in meta_cat) {
+    print(col)
     
-  # Save the plot
-  filename <- paste0(directory_path, marker_to_plot, "_before_and_after_transformation.png")
-  ggsave(filename, plot = both, width = 10, height = 5)
+    # Use the unique values in the specified column of 'spe'
+    unique_values <- unique(spe[[col]])
+    
+    # Ensure the palette has enough colors for the unique values
+    if (length(unique_values) > 0) {
+        col_palette <- setNames(kelly.colors((length(unique_values))), unique_values)
+        color_vectors[[col]] <- col_palette  # Store in list
+    } else {
+        print(paste("No unique values found in column", col))
+    }
 }
+
+# add the list of color vectors to the metadata of the spe object
+metadata(spe)$color_vectors <- color_vectors
+
+```
+
+
+# Load image data
+
+## Read in images
+```{r}
+images <- loadImages("../../data/img/") # PUT IN CONFIG
+```
+
+## Read in masks
+```{r}
+masks <- loadImages("../../data/masks/", as.is = TRUE)
+
+```
+
+## Set the channelNames for easy visualization
+```{r}
+channelNames(images) <- rownames(spe)
+images
+```
+
+# Add metadata for image vizualization
+## TODO: How would we CONFIG this?
+```{r}
+all.equal(names(images), names(masks))
+
+image_ID <- names(images)
+slide_ID <- meta$slide_ID[match(image_ID, meta$image_ID)]
+treatment <- meta$treatment[match(image_ID, meta$image_ID)]
+
+# Modify the metadata of the 'images' and 'masks' objects. 'mcols' refers to 'metadata columns'. 
+# The Dataframe() function creates a new data frame object with 3 columns, each representing metadata information.
+mcols(images) <- mcols(masks) <- DataFrame(image_ID = names(images), slide_ID = slide_ID, treatment = treatment)
+mcols(masks)
+```
+
+# Generate single-cell data from images
+```{r}
+cytomapper_sce <- measureObjects(masks, image = images, img_id = "image_ID")
+```
+
+```{r}
+# create a new directory
+dir.create("../../analysis/files", showWarnings = FALSE)
+
+# We can save the generated data objects for further downstream processing and analysis.
+saveRDS(spe, "../../analysis/files/speM1.rds")
+saveRDS(images, "../../analysis/files/imagesM1.rds")
+saveRDS(masks, "../../analysis/files/masksM1.rds")
+```
+
+
+```{r}
+message("### ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | LOG MESSAGE: The ReadInTheData.R module finished successfully\n")
 ```
 
