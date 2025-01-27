@@ -15,20 +15,6 @@ Spatial Experiment (SPE) - The SpatialExperiment class is used to organize and a
 
 SingleCellExperiment (SCE) - Originally created for scRNA-seq data but is very similar to SPE. A lot of overlap between the two. In theory, SPE and SCE could be used to analyse both RNA-seq data and IMC data together. The main difference between the two is in the way that spatial information is stored. in SCE, locations are stored in the 'colData' slot whilst in SPE containers, locations are stored in the 'spatialCoords' slot.
 
-```{r}
-#! ASK BALAZS TO EXPLAIN THIS
-
-# Check if the log file exists, if it does, then delete it for the new run
-if (file.exists("logs/1_ReadInTheData.log")) {
-  file.remove("logs/1_ReadInTheData.log")
-}
-
-# Capture messages and errors to a file
-zz <- file("logs/1_ReadInTheData.log", open = "a")
-sink(zz, type = "message", append = TRUE)
-message("### ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-  " | LOG MESSAGE: Start the ReadInTheData.R module\n")
-```
 
 ```{r}
 # Load packages
@@ -48,6 +34,21 @@ setwd("/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/") #CONFIG
 getwd()
 ```
 
+
+```{r}
+## Check if the log file exists, if it does, then delete it for the new run
+if (file.exists("../logs/1_ReadInTheData.log")) {
+  file.remove("../logs/1_ReadInTheData.log")
+}
+
+## Capture messages and errors to a file
+zz <- file("../logs/1_ReadInTheData.log", open = "a")
+sink(zz, type = "message", append = TRUE)
+message("### ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+  " | LOG MESSAGE: Start the ReadInTheData.R module\n")
+```
+
+
 ```{r}
 spe = read_steinbock("../../data/") #CONFIG
 ```
@@ -59,14 +60,13 @@ spe = read_steinbock("../../data/") #CONFIG
 colnames(spe) = paste0(spe$sample_id, "_", spe$ObjectNumber)
 ```
 
-
 ```{r}
 # Assign the Excel metadata to a variable, such as 'meta'.
 meta = read_excel("../../data/meta_data/meta.xlsx", sheet= "meta_IMC") #CONFIG
 ```
 
-
 # From this we extract a number of variables that we will use to annotate the data.
+
 ```{r}
 meta_cat = colnames(meta)
 
@@ -77,18 +77,21 @@ for (col in meta_cat) {
 }
 ```
 
+############### SPLIT INTO NEW DOCUMENT HERE
 
 # Count transformation
-- To avoid analysis biases from these high-expressing cells, the expression counts are commonly transformed or clipped
-- Transformation using inverse hyperbolic sine transformation on data
-- While the cofactor for CyTOF data is often set to 5, IMC data usually display much lower counts. We therefore apply a cofactor of 1
+
+-   To avoid analysis biases from these high-expressing cells, the expression counts are commonly transformed or clipped
+-   Transformation using inverse hyperbolic sine transformation on data
+-   While the cofactor for CyTOF data is often set to 5, IMC data usually display much lower counts. We therefore apply a cofactor of 1
+
 ```{r}
 # apply transformation
 assay(spe, "exprs") = asinh(counts(spe)/1)
 ```
 
-
 Create directories to show before and after transformation
+
 ```{r}
 # Define the base directory
 base_dir = "../../analysis/figures/"
@@ -105,21 +108,25 @@ create_dir(base_dir)
 create_dir(file.path(base_dir, "001_ReadInTheData"))
 create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_before"))
 create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_after"))
+create_dir(file.path(base_dir, "001_ReadInTheData/count_transformation_both"))
 ```
 
-
-
 # Format data
+
 ```{r}
 unique_sample_id = unique(spe$slide_ID) 
 unique_markers = unique(rownames(spe))
 ```
 
-
-View data before transformation
+# Determine what to group by
 ```{r}
-group_by = "slide_ID"
+group_by = "treatment"
+```
 
+
+View data before transformation only
+
+```{r}
 # Outer loop: Iterate over unique markers
 for (j in seq_along(unique_markers)) {
   marker_to_plot <- unique_markers[j]
@@ -129,9 +136,8 @@ for (j in seq_along(unique_markers)) {
   
   # Create the plot
   plot <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "counts") +
-        ggtitle(paste(marker_to_plot, "- before transformation")) +
-        guides(fill = "none") +
-        geom_density_ridges(fill = "lightblue") +
+        ggtitle(paste(marker_to_plot, "- before transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
         ylab(group_by) +
         theme(
           axis.text.x = element_text(size = 10),
@@ -140,19 +146,16 @@ for (j in seq_along(unique_markers)) {
         )
       
     # Save the plot
-    filename <- paste0(directory_path, marker_to_plot, "_before_transformation.png")
+    filename <- paste0(directory_path, marker_to_plot,"_", group_by, "_before_transformation.png")
     png(filename, res = 600, units = "in", width = 15, height = 15)
     print(plot) # Use print() instead of plot()
     dev.off()
 }
 ```
 
+View data after transformation only
 
-View data after transformation
 ```{r}
-group_by = "slide_ID"
-
-# Outer loop: Iterate over unique markers
 for (j in seq_along(unique_markers)) {
   marker_to_plot <- unique_markers[j]
   print(marker_to_plot)
@@ -161,9 +164,8 @@ for (j in seq_along(unique_markers)) {
   
   # Create the plot
   plot <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "exprs") +
-        ggtitle(paste(marker_to_plot, "- after transformation")) +
-        guides(fill = "none") +
-        geom_density_ridges(fill = "lightblue") +
+        ggtitle(paste(marker_to_plot, "- after transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
         ylab(group_by) +
         theme(
           axis.text.x = element_text(size = 10),
@@ -172,125 +174,50 @@ for (j in seq_along(unique_markers)) {
         )
       
     # Save the plot
-    filename <- paste0(directory_path, marker_to_plot, "_after_transformation.png")
+    filename <- paste0(directory_path, marker_to_plot,"_", group_by, "_after_transformation.png")
     png(filename, res = 600, units = "in", width = 15, height = 15)
     print(plot) # Use print() instead of plot()
     dev.off()
 }
 ```
 
-## Both as one figure...
 
-dir.create("./Figures", showWarnings = FALSE) dir.create("./Figures/001_ReadInTheData/count_transformation_both", showWarnings = FALSE)
+View both before and after transformation
 
-j=1 for (j in 1:seq_along(unique_markers)){ \# 1st open marker_to_plot = unique_markers\[j\]
-
-directory_path \<- paste("./Figures/001_ReadInTheData/count_transformation_both/", marker_to_plot, sep = "")
-
-dir.create(directory_path, showWarnings = FALSE)
-
-i=1 for (i in 1:seq_along(unique_sample_id)){ \# 2nd open sample_to_plot = unique_sample_id\[i\] spe_subset \<- spe\[, spe\$sample_id %in% sample_to_plot\]
-
-```         
-plotA <- dittoRidgePlot(spe_subset, var = marker_to_plot, group.by = "patient_id", assay = "counts") +
-          ggtitle(paste(unique_sample_id[i], "-", marker_to_plot, "After transformation"))+
-          guides(fill = "none")+
-          geom_density_ridges(fill = "orange") +
-          ylab(spe$patient_id) +
-          theme(axis.text.x = element_text(size = 10),
-                axis.text.y = element_blank(),
-                axis.ticks.y = element_blank()) +
-          xlim(0,8)
+```{r}
+# Outer loop: Iterate over unique markers
+for (j in seq_along(unique_markers)) {
+  marker_to_plot <- unique_markers[j]
+  print(marker_to_plot)
+  # Define directory for the current marker
+  directory_path <- paste0("../../analysis/figures/001_ReadInTheData/count_transformation_both/")
   
-  plotB <- dittoRidgePlot(spe_subset, var = marker_to_plot, group.by = "patient_id", assay = "exprs") +
-            ggtitle(paste(unique_sample_id[i], "-", marker_to_plot, "After transformation")) +
-            guides(fill = "none") +
-            geom_density_ridges(fill = "dodgerblue3") +
-            ylab(spe$patient_id) +
-            theme(axis.text.x = element_text(size = 10),
-                  axis.text.y = element_blank(),
-                  axis.ticks.y = element_blank()) +
-            xlim(0, 8) # Problem here is that markers like aSMA need an xlim of 10, whereas markers like CD3 need an xlim of 2.
-    # Is there a way we can make this dynamic but remain the same for both plots?
+  # Create the plot
+  plot_before <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "counts") +
+        ggtitle(paste(marker_to_plot, "- before transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
+        ylab(group_by) +
+        theme(
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()
+        )
+
+  plot_after <- dittoRidgePlot(spe, var = marker_to_plot, group.by = group_by, assay = "exprs") +
+        ggtitle(paste(marker_to_plot, "- after transformation grouped by", group_by)) +
+        scale_fill_viridis_d(option = "turbo", name = group_by) +
+        ylab(group_by) +
+        theme(
+          axis.text.x = element_text(size = 10),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank()
+        )
+  # Plot side by side  
+  both <- grid.arrange(plot_before, plot_after, ncol=2)
     
-    directory_path <- paste0("./Figures/001_ReadInTheData/count_transformation_both/", marker_to_plot, "/")
-    filename <- paste0(directory_path, sample_to_plot, "_", marker_to_plot, "_before_and_after_transformation.png")
-    png(filename, res = 600, units = "in", width = 15, height = 15)
-    
-    grid.arrange(plotA, plotB, ncol = 2, nrow = 1)
-    dev.off()
+  # Save the plot
+  filename <- paste0(directory_path, marker_to_plot, "_before_and_after_transformation.png")
+  ggsave(filename, plot = both, width = 10, height = 5)
+}
 ```
 
-} \# 2nd close } \# 1st close
-
-# These should already have been removed at the panel.csv stage, but no harm in just ensuring they do not exist.
-
-rowData(spe)\$use_channel \<- !grepl("DNA\|Histone\|80ArAr\|131Xe\|127I\|134Xe\|208Pb\|138Ba\|Siglec-8\|Collagen\|EpCAM\|EPCAM\|Galectin10\|Fibronectin\|CD19\|VEGF\|Collagen", rownames(spe))
-
-### Define Colour Schemes
-
-color_vectors \<- list() \# Create an empty list object.
-
-slide_col \<- setNames(brewer.pal(length(unique(spe$slide)), name = "Set2"),  unique(spe$slide)) patient_id_col \<- setNames(colorRampPalette(rainbow(7))(length(unique(spe$patient_id))), unique(spe$patient_id))
-
-diagnosis_col \<- setNames(brewer.pal(length(unique(spe$diagnosis)), name = "Set2"),  unique(spe$diagnosis))
-
-sample_id_col \<- setNames(colorRampPalette(rainbow(7))(length(unique(spe$sample_id))), unique(spe$sample_id))
-
-cohort_col \<- setNames(c("red", "blue"), unique(spe\$cohort))
-
-color_vectors$patient_id <- patient_id_col color_vectors$sample_id \<- sample_id_col color_vectors$diagnosis <- diagnosis_col color_vectors$slide \<- slide_col color_vectors\$cohort \<- cohort_col
-
-# We then assign the 'color_vectors' list as a metadata slot into the 'spe' object.
-
-metadata(spe)\$color_vectors \<- color_vectors
-
-### Read in the images
-
-# Load in all of the raw images
-
-images \<- loadImages("/home/imcpipeline/files/steinbock/img/")
-
-# Load in the masks
-
-masks \<- loadImages("/home/imcpipeline/files/steinbock/masks/", as.is = TRUE)
-
-# In the case of multi-channel images, it is useful to set 'Channel_Names'. Using the steinbock framework, the channel order of the single-cell data matches the channel order to make sure that the channel order is identical between the single-cell data and the images.
-
-channelNames(images) \<- rownames(spe)
-
-# For image and mask visualization, we will need to add additional metadata to the 'elementMetadata' slot of the 'CytoImageList' objects. This slot is accessible via the 'mcols' function. Here, we will save the matched 'sample_id', 'patient_id' and 'indication' information within the 'elementMetadata' slot of the multichannel images and segmentation masks objects. it is crucial that the order of the images in both 'CytoImageList' objects is the same.
-
-# We can check these are the same by executing the following:
-
-all.equal(names(images), names(masks))
-
-sample_id \<- names(images)
-
-patient_id \<- meta$patient_id[match(sample_id, meta$sample_id)\]
-
-diagnosis \<- meta$diagnosis[match(sample_id, meta$sample_id)\]
-
-# Here, we are modifying the metadata of the 'images' and 'masks' objects. 'mcols' refers to 'metadata columns'. The Dataframe() function creates a new data frame object with 3 columns, each representing metadata information. The sample_id column is set to be the names of the images object, while patient_id and indication are set to the corresponding values retrieved from the meta data frame using the match() function to match the patient_id with the Sample.ID column in the meta data frame.
-
-mcols(images) \<- mcols(masks) \<- DataFrame(sample_id = names(images), patient_id = patient_id, diagnosis = diagnosis)
-
-print("start") print(length(names(images))) print(length(patient_id)) print(length(indication)) print("end")
-
-### Generate single-cell data from images: an alternative way to generate a SCE
-
-# We can generate a 'SingleCellExperiment' object directly from the multi-channel images and segmentation masks is supported by the 'measureObjects' function of the cytomapper package. For every cell in the 'masks' object, the function computes the mean pixel intensity per channel as well as morphological features (area, radius, major axis length, eccentricity) as well as the location of cells.
-
-# This easily takes 15-20 minutes without HPC
-
-cytomapper_sce \<- measureObjects(masks, image = images, img_id = "sample_id")
-
-dir.create("./files", showWarnings = FALSE)
-
-# We can save the generated data objects for further downstream processing and analysis.
-
-saveRDS(spe, "/home/imcpipeline/files/speM1.rds") saveRDS(images, "/home/imcpipeline/files/imagesM1.rds") saveRDS(masks, "/home/imcpipeline/files/masksM1.rds")
-
-message("\###", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " \| LOG MESSAGE: The ReadInTheData.R module finished successfully\n")
-
-\`\`\`
