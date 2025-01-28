@@ -32,27 +32,29 @@ library(readxl)
 ```
 
 ```{r}
-setwd("/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/") #CONFIG
+wd = "/Users/sarapatti/Desktop/PhD_projects/Llyod_lab/COPD_CO_IMC/" #CONFIG
+setwd(wd)
 getwd()
 ```
 
 
 ```{r}
 ## Check if the log file exists, if it does, then delete it for the new run
-if (file.exists("../logs/1_ReadInTheData.log")) {
-  file.remove("../logs/1_ReadInTheData.log")
+if (file.exists("../logs/01_ReadInTheData.log")) {
+  file.remove("../logs/01_ReadInTheData.log")
 }
 
 ## Capture messages and errors to a file
-zz <- file("../logs/1_ReadInTheData.log", open = "a")
+zz <- file("../logs/01_ReadInTheData.log", open = "a")
 sink(zz, type = "message", append = TRUE)
 message("### ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
-  " | LOG MESSAGE: Start the ReadInTheData.R module\n")
+  " | LOG MESSAGE: Start the ReadInTheData.qmd module\n")
 ```
 
 
 ```{r}
-spe = read_steinbock("../../data/") #CONFIG
+data_path = "../../data/" #CONFIG
+spe = read_steinbock(data_path) 
 ```
 
 # Format data
@@ -64,7 +66,11 @@ colnames(spe) = paste0(spe$sample_id, "_", spe$ObjectNumber)
 
 ```{r}
 # Assign the Excel metadata to a variable, such as 'meta'.
-meta = read_excel("../../data/meta_data/meta.xlsx", sheet= "meta_IMC") #CONFIG
+path_to_meta = "../../data/meta_data/meta.xlsx" #CONFIG
+sheet_name = "meta_IMC" #CONFIG
+
+meta = read_excel(path_to_meta, 
+                  sheet= ) 
 ```
 
 # From this we extract a number of variables that we will use to annotate the data.
@@ -75,14 +81,15 @@ meta_cat = colnames(meta)
 # Loop through all columns in `meta`
 for (col in meta_cat) {
   # Dynamically create a new column in `spe` with the same name as in `meta`
-  spe[[col]] = meta[[col]][match(spe$sample_id, meta$image)]
+  spe[[col]] = meta[[col]][match(spe$sample_id, meta$image_ID)]
 }
 ```
 
 
 # Define color schemes
-## TO DO: How should we change this so it only if for discrete variables? We want to use a cmap for continous variables and a palette for discrete 
+## TODO: How should we change this so it only if for discrete variables? We want to use a cmap for continous variables and a palette for discrete 
 ```{r}
+library(viridis)
 # Initialize an empty list to store color vectors
 color_vectors <- list()  
 
@@ -92,10 +99,12 @@ for (col in meta_cat) {
     
     # Use the unique values in the specified column of 'spe'
     unique_values <- unique(spe[[col]])
+    print((unique_values))
+    print((length(unique_values)))
     
     # Ensure the palette has enough colors for the unique values
     if (length(unique_values) > 0) {
-        col_palette <- setNames(kelly.colors((length(unique_values))), unique_values)
+        col_palette <- setNames(viridis(length(unique_values)), unique_values)
         color_vectors[[col]] <- col_palette  # Store in list
     } else {
         print(paste("No unique values found in column", col))
@@ -112,12 +121,14 @@ metadata(spe)$color_vectors <- color_vectors
 
 ## Read in images
 ```{r}
-images <- loadImages("../../data/img/") # PUT IN CONFIG
+images_path = "../../data/img/" # PUT IN CONFIG
+images <- loadImages(images_path) 
 ```
 
 ## Read in masks
 ```{r}
-masks <- loadImages("../../data/masks/", as.is = TRUE)
+mask_path = "../../data/masks/" # PUT IN CONFIG
+masks <- loadImages(mask_path, as.is = TRUE)
 
 ```
 
@@ -159,6 +170,6 @@ saveRDS(masks, "../../analysis/files/masksM1.rds")
 
 
 ```{r}
-message("### ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | LOG MESSAGE: The ReadInTheData.R module finished successfully\n")
+message("### ", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), " | LOG MESSAGE: The ReadInTheData.qmd module finished successfully\n")
 ```
 
