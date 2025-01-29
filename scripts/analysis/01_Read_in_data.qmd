@@ -29,6 +29,8 @@ library(pals)
 library(ggridges)
 library(gridExtra)
 library(readxl)
+library(dplyr)
+library(viridis)
 ```
 
 ```{r}
@@ -86,21 +88,18 @@ for (col in meta_cat) {
 ```
 
 
+
 # Define color schemes
 ## TODO: How should we change this so it only if for discrete variables? We want to use a cmap for continous variables and a palette for discrete 
 ```{r}
-library(viridis)
 # Initialize an empty list to store color vectors
 color_vectors <- list()  
 
 # Assign a color palette to every column in metadata
 for (col in meta_cat) {
-    print(col)
     
     # Use the unique values in the specified column of 'spe'
     unique_values <- unique(spe[[col]])
-    print((unique_values))
-    print((length(unique_values)))
     
     # Ensure the palette has enough colors for the unique values
     if (length(unique_values) > 0) {
@@ -129,13 +128,11 @@ images <- loadImages(images_path)
 ```{r}
 mask_path = "../../data/masks/" # PUT IN CONFIG
 masks <- loadImages(mask_path, as.is = TRUE)
-
 ```
 
-## Set the channelNames for easy visualization
+# Set the channelNames for easy visualization
 ```{r}
 channelNames(images) <- rownames(spe)
-images
 ```
 
 # Add metadata for image vizualization
@@ -150,8 +147,25 @@ treatment <- meta$treatment[match(image_ID, meta$image_ID)]
 # Modify the metadata of the 'images' and 'masks' objects. 'mcols' refers to 'metadata columns'. 
 # The Dataframe() function creates a new data frame object with 3 columns, each representing metadata information.
 mcols(images) <- mcols(masks) <- DataFrame(image_ID = names(images), slide_ID = slide_ID, treatment = treatment)
-mcols(masks)
 ```
+```{r}
+# Remove slides that are laser test
+slides_to_remove = c("D6_2_D7_2_003", 
+                     "D6_2_D7_2_004", 
+                     "D6_2_D7_2_005", 
+                     "D1_D2_D3_D4_005")
+
+
+# Filtered spe
+spe <- spe[, spe$sample_id != slides_to_remove]
+
+# Filtered masks
+masks <- masks[!(names(masks) %in% slides_to_remove)]
+
+# Filtered images
+images <- images[!(names(images) %in% slides_to_remove)]
+```
+
 
 # Generate single-cell data from images
 ```{r}
