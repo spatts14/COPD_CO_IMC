@@ -96,7 +96,7 @@ unique_markers = unique(rownames(spe))
 
 # Determine what to group by
 ```{r}
-group_by = "image_ID"
+group_by = "slide_ID" # CONFIG
 ```
 
 

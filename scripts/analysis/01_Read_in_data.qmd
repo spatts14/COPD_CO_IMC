@@ -150,14 +150,13 @@ mcols(images) <- mcols(masks) <- DataFrame(image_ID = names(images), slide_ID = 
 ```
 ```{r}
 # Remove slides that are laser test
-slides_to_remove = c("D6_2_D7_2_003", 
+slides_to_remove <- c("D6_2_D7_2_003", 
                      "D6_2_D7_2_004", 
                      "D6_2_D7_2_005", 
                      "D1_D2_D3_D4_005")
 
-
 # Filtered spe
-spe <- spe[, spe$sample_id != slides_to_remove]
+spe <- spe[, !(spe$sample_id %in% slides_to_remove)]
 
 # Filtered masks
 masks <- masks[!(names(masks) %in% slides_to_remove)]
